@@ -1,5 +1,5 @@
 #Check if cython code has been compiled
-import os
+import os, json, binascii
 import subprocess
 print("Importing AfterImage Cython Library")
 if not os.path.isfile("AfterImage.c"): #has not yet been compiled, so try to do so...
@@ -7,21 +7,21 @@ if not os.path.isfile("AfterImage.c"): #has not yet been compiled, so try to do 
     subprocess.call(cmd,shell=True)
 #Import dependencies
 import netStat as ns
-import csv
 import numpy as np
 print("Importing Scapy Library")
 from scapy.all import *
 import os.path
 import platform
 import subprocess
+from sdnator_due import *
 
 
 #Extracts Kitsune features from given pcap file one packet at a time using "get_next_vector()"
 # If wireshark is installed (tshark) it is used to parse (it's faster), otherwise, scapy is used (much slower).
 # If wireshark is used then a tsv file (parsed version of the pcap) will be made -which you can use as your input next time
 class FE:
-    def __init__(self,file_path,limit=np.inf):
-        self.path = file_path
+    def __init__(self,dataKey,limit=np.inf):
+        self.dataKey = dataKey
         self.limit = limit
         self.parse_type = None #unknown
         self.curPacketIndx = 0
@@ -48,65 +48,18 @@ class FE:
         return ''
 
     def __prep__(self):
-        ### Find file: ###
-        if not os.path.isfile(self.path):  # file does not exist
-            print("File: " + self.path + " does not exist")
-            raise Exception()
-
-        ### check file type ###
-        type = self.path.split('.')[-1]
-
-        self._tshark = self._get_tshark_path()
-        ##If file is TSV (pre-parsed by wireshark script)
-        if type == "tsv":
-            self.parse_type = "tsv"
-
-        ##If file is pcap
-        elif type == "pcap" or type == 'pcapng':
-            # Try parsing via tshark dll of wireshark (faster)
-            if os.path.isfile(self._tshark):
-                self.pcap2tsv_with_tshark()  # creates local tsv file
-                self.path += ".tsv"
-                self.parse_type = "tsv"
-            else: # Otherwise, parse with scapy (slower)
-                print("tshark not found. Trying scapy...")
-                self.parse_type = "scapy"
-        else:
-            print("File: " + self.path + " is not a tsv or pcap file")
-            raise Exception()
-
-        ### open readers ##
-        if self.parse_type == "tsv":
-            maxInt = sys.maxsize
-            decrement = True
-            while decrement:
-                # decrease the maxInt value by factor 10
-                # as long as the OverflowError occurs.
-                decrement = False
-                try:
-                    csv.field_size_limit(maxInt)
-                except OverflowError:
-                    maxInt = int(maxInt / 10)
-                    decrement = True
-
-            print("counting lines in file...")
-            num_lines = sum(1 for line in open(self.path))
-            print("There are " + str(num_lines) + " Packets.")
-            self.limit = min(self.limit, num_lines-1)
-            self.tsvinf = open(self.path, 'rt', encoding="utf8")
-            self.tsvin = csv.reader(self.tsvinf, delimiter='\t')
-            row = self.tsvin.__next__() #move iterator past header
-
-        else: # scapy
-            print("Reading PCAP file via Scapy...")
-            self.scapyin = rdpcap(self.path)
-            self.limit = len(self.scapyin)
-            print("Loaded " + str(len(self.scapyin)) + " Packets.")
+        print("Reading training dataset packets via DUE...")
+        raw_packets = due.get({'dataKey': "sonata::runtime.packet"})
+        self.scapyin = []
+        for each in raw_packets:
+            pkt = raw(binascii.unhexlify(each['value']))
+            pkt = IP(pkt)
+            self.scapyin.append(pkt)
+        self.limit = len(self.scapyin)
+        print("Loaded " + str(len(self.scapyin)) + " training dataset Packets.")
 
     def get_next_vector(self):
         if self.curPacketIndx == self.limit:
-            if self.parse_type == 'tsv':
-                self.tsvinf.close()
             return []
 
         ### Parse next packet ###

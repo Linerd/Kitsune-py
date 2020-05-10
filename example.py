@@ -1,6 +1,7 @@
 from Kitsune import Kitsune
 import numpy as np
 import time
+from sdnator_due import *
 
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
@@ -13,6 +14,16 @@ import time
 #The runtimes presented in the paper, are based on the C++ implimentation (roughly 100x faster than the python implimentation)
 ###################  Last Tested with Anaconda 3.6.3   #######################
 
+# Set up due
+dataKey = "kitsune::attacker_ip"
+due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
+due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
+# init due
+interest = 'sonata::runtime.packet'
+# TODO: Remove COORDINATOR flag when put into production
+due.init("kitsune", CONSUMER | PRODUCER | COORDINATOR, interests = [interest], capabilities = [dataKey])
+
+
 # Load Mirai pcap (a recording of the Mirai botnet malware being activated)
 # The first 70,000 observations are clean...
 print("Unzipping Sample Capture...")
@@ -20,9 +31,6 @@ import zipfile
 with zipfile.ZipFile("mirai.zip","r") as zip_ref:
     zip_ref.extractall()
 
-
-# File location
-path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
 packet_limit = np.Inf #the number of packets to process
 
 # KitNET params:
@@ -31,7 +39,7 @@ FMgrace = 5000 #the number of instances taken to learn the feature mapping (the 
 ADgrace = 50000 #the number of instances used to train the anomaly detector (ensemble itself)
 
 # Build Kitsune
-K = Kitsune(path,packet_limit,maxAE,FMgrace,ADgrace)
+K = Kitsune(dataKey,packet_limit,maxAE,FMgrace,ADgrace)
 
 print("Running Kitsune:")
 RMSEs = []
@@ -56,19 +64,21 @@ from scipy.stats import norm
 benignSample = np.log(RMSEs[FMgrace+ADgrace+1:100000])
 logProbs = norm.logsf(np.log(RMSEs), np.mean(benignSample), np.std(benignSample))
 
-# plot the RMSE anomaly scores
-print("Plotting results")
-from matplotlib import pyplot as plt
-from matplotlib import cm
-plt.figure(figsize=(10,5))
-fig = plt.scatter(range(FMgrace+ADgrace+1,len(RMSEs)),RMSEs[FMgrace+ADgrace+1:],s=0.1,c=logProbs[FMgrace+ADgrace+1:],cmap='RdYlGn')
-plt.yscale("log")
-plt.title("Anomaly Scores from Kitsune's Execution Phase")
-plt.ylabel("RMSE (log scaled)")
-plt.xlabel("Time elapsed [min]")
-plt.annotate('Mirai C&C channel opened [Telnet]', xy=(121662,RMSEs[121662]), xytext=(151662,1),arrowprops=dict(facecolor='black', shrink=0.05),)
-plt.annotate('Mirai Bot Activated\nMirai scans network\nfor vulnerable devices', xy=(122662,10), xytext=(122662,150),arrowprops=dict(facecolor='black', shrink=0.05),)
-plt.annotate('Mirai Bot launches DoS attack', xy=(370000,100), xytext=(390000,1000),arrowprops=dict(facecolor='black', shrink=0.05),)
-figbar=plt.colorbar()
-figbar.ax.set_ylabel('Log Probability\n ', rotation=270)
-plt.show()
+# # plot the RMSE anomaly scores
+# print("Plotting results")
+# from matplotlib import pyplot as plt
+# from matplotlib import cm
+# plt.figure(figsize=(10,5))
+# fig = plt.scatter(range(FMgrace+ADgrace+1,len(RMSEs)),RMSEs[FMgrace+ADgrace+1:],s=0.1,c=logProbs[FMgrace+ADgrace+1:],cmap='RdYlGn')
+# plt.yscale("log")
+# plt.title("Anomaly Scores from Kitsune's Execution Phase")
+# plt.ylabel("RMSE (log scaled)")
+# plt.xlabel("Time elapsed [min]")
+# plt.annotate('Mirai C&C channel opened [Telnet]', xy=(121662,RMSEs[121662]), xytext=(151662,1),arrowprops=dict(facecolor='black', shrink=0.05),)
+# plt.annotate('Mirai Bot Activated\nMirai scans network\nfor vulnerable devices', xy=(122662,10), xytext=(122662,150),arrowprops=dict(facecolor='black', shrink=0.05),)
+# plt.annotate('Mirai Bot launches DoS attack', xy=(370000,100), xytext=(390000,1000),arrowprops=dict(facecolor='black', shrink=0.05),)
+# figbar=plt.colorbar()
+# figbar.ax.set_ylabel('Log Probability\n ', rotation=270)
+# plt.show()
+
+due.close()

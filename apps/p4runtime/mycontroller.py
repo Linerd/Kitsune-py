@@ -3,7 +3,9 @@ import argparse
 import grpc
 import os
 import sys
+import threading
 from time import sleep
+from sdnator_due import *
 
 # Import P4Runtime lib from parent utils dir
 # Probably there's a better way of doing this.
@@ -11,7 +13,6 @@ sys.path.append(
     os.path.join(os.path.dirname(os.path.abspath(__file__)),
                  '../../utils/'))
 import p4runtime_lib.bmv2
-from p4runtime_lib.error_utils import printGrpcError
 from p4runtime_lib.switch import ShutdownAllSwitchConnections
 import p4runtime_lib.helper
 
@@ -69,7 +70,17 @@ def writeTunnelRules(p4info_helper, ingress_sw, egress_sw, tunnel_id,
 
     # TODO build the transit rule
     # TODO install the transit rule on the ingress switch
-    print "TODO Install transit tunnel rule"
+    table_entry = p4info_helper.buildTableEntry(
+        table_name="MyIngress.myTunnel_exact",
+        match_fields={
+            "hdr.myTunnel.dst_id": tunnel_id
+        },
+        action_name="MyIngress.myTunnel_forward",
+        action_params={
+            "port": SWITCH_TO_SWITCH_PORT
+        })
+    ingress_sw.WriteTableEntry(table_entry)
+    print "Installed transit tunnel rule on %s" % ingress_sw.name
 
     # 3) Tunnel Egress Rule
     # For our simple topology, the host will always be located on the
@@ -89,6 +100,36 @@ def writeTunnelRules(p4info_helper, ingress_sw, egress_sw, tunnel_id,
     egress_sw.WriteTableEntry(table_entry)
     print "Installed egress tunnel rule on %s" % egress_sw.name
 
+def dropBySrcIP(p4info_helper, sw, srcIP):
+    """
+    Add drop rule to switch by srcIP
+
+    Arguments:
+        p4info_helper {P4InfoHelper}
+        sw {Switch}
+        srcIP {str}
+    """
+    table_entry = p4info_helper.buildTableEntry(
+        table_name="MyIngress.ipv4_lpm",
+        match_fields={
+            "hdr.ipv4.srcAddr": (srcIP, 32)
+        },
+        action_name="MyIngress.drop"
+    )
+    sw.WriteTableEntry(table_entry)
+
+def listenAndEmitPackets(sw, due):
+    """
+    Stream packets from grpcs
+
+    Arguments:
+        sw {Switch}
+        fn {Function} -- callback
+    """
+    dataKey = "p4runtime::packet.%s" % sw.name
+    for pkt in sw.StreamMessage('packet'):
+        print pkt
+        # due.write(dataKey, pkt)
 
 def readTableRules(p4info_helper, sw):
     """
@@ -103,9 +144,18 @@ def readTableRules(p4info_helper, sw):
             entry = entity.table_entry
             # TODO For extra credit, you can use the p4info_helper to translate
             #      the IDs in the entry to names
-            print entry
-            print '-----'
-
+            table_name = p4info_helper.get_tables_name(entry.table_id)
+            print '%s: ' % table_name,
+            for m in entry.match:
+                print p4info_helper.get_match_field_name(table_name, m.field_id),
+                print '%r' % (p4info_helper.get_match_field_value(m),),
+            action = entry.action.action
+            action_name = p4info_helper.get_actions_name(action.action_id)
+            print '->', action_name,
+            for p in action.params:
+                print p4info_helper.get_action_param_name(action_name, p.param_id),
+                print '%r' % p.value,
+            print
 
 def printCounter(p4info_helper, sw, counter_name, index):
     """
@@ -125,6 +175,13 @@ def printCounter(p4info_helper, sw, counter_name, index):
                 sw.name, counter_name, index,
                 counter.data.packet_count, counter.data.byte_count
             )
+
+def printGrpcError(e):
+    print "gRPC Error:", e.details(),
+    status_code = e.code()
+    print "(%s)" % status_code.name,
+    traceback = sys.exc_info()[2]
+    print "[%s:%d]" % (traceback.tb_frame.f_code.co_filename, traceback.tb_lineno)
 
 def main(p4info_file_path, bmv2_file_path):
     # Instantiate a P4Runtime helper from the p4info file
@@ -167,17 +224,36 @@ def main(p4info_file_path, bmv2_file_path):
                          dst_eth_addr="08:00:00:00:01:11", dst_ip_addr="10.0.1.1")
 
         # TODO Uncomment the following two lines to read table entries from s1 and s2
-        # readTableRules(p4info_helper, s1)
-        # readTableRules(p4info_helper, s2)
+        readTableRules(p4info_helper, s1)
+        readTableRules(p4info_helper, s2)
 
         # Print the tunnel counters every 2 seconds
-        while True:
-            sleep(2)
-            print '\n----- Reading tunnel counters -----'
-            printCounter(p4info_helper, s1, "MyIngress.ingressTunnelCounter", 100)
-            printCounter(p4info_helper, s2, "MyIngress.egressTunnelCounter", 100)
-            printCounter(p4info_helper, s2, "MyIngress.ingressTunnelCounter", 200)
-            printCounter(p4info_helper, s1, "MyIngress.egressTunnelCounter", 200)
+        # while True:
+        #     sleep(2)
+        #     print '\n----- Reading tunnel counters -----'
+        #     printCounter(p4info_helper, s1, "MyIngress.ingressTunnelCounter", 100)
+        #     printCounter(p4info_helper, s2, "MyIngress.egressTunnelCounter", 100)
+        #     printCounter(p4info_helper, s2, "MyIngress.ingressTunnelCounter", 200)
+        #     printCounter(p4info_helper, s1, "MyIngress.egressTunnelCounter", 200)
+
+        # init due
+        due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
+        due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
+        # TODO: use the COORDINATOR flag to stop waiting
+        due.init('P4RuntimeController', CONSUMER | PRODUCER | COORDINATOR)
+
+        # listen for packet and send over to SDNator
+        # NOTE: using s1 as example here
+        emitter = threading.Thread(target=listenAndEmitPackets, args=(s1, due))
+        emitter.setDaemon(True)
+        emitter.start()
+
+        # listen for remote command
+        o_attacker_ip = due.observe("kitsune::attacker_ip")
+        o_attacker_ip.subscribe(on_next = lambda d: dropBySrcIP(p4info_helper, s1, d[0]))
+
+        # keep the app running
+        due.wait()
 
     except KeyboardInterrupt:
         print " Shutting down."
@@ -185,6 +261,7 @@ def main(p4info_file_path, bmv2_file_path):
         printGrpcError(e)
 
     ShutdownAllSwitchConnections()
+    due.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Controller')

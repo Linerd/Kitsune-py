@@ -3,12 +3,13 @@
 
 Vagrant.configure(2) do |config|
   config.vm.box = "bento/ubuntu-16.04"
+  config.ssh.forward_x11 = true
   config.vm.define "p4-kitsune" do |kitsune|
   end
   config.vm.provider "virtualbox" do |vb|
     vb.name = "P4 Kitsune"
     vb.gui = false
-    vb.memory = 4096
+    vb.memory = 8192
     vb.cpus = 4
     vb.customize ["modifyvm", :id, "--cableconnected1", "on"]
     vb.customize ["storageattach", :id, 
@@ -16,10 +17,10 @@ Vagrant.configure(2) do |config|
                 "--port", "0", "--device", "0", 
                 "--type", "dvddrive", 
                 "--medium", "emptydrive"]    
-    vb.customize ["modifyvm", :id, "--vram", "32"]
+    vb.customize ["modifyvm", :id, "--vram", "256"]
 
   end
-  config.vm.synced_folder '..', '/vagrant', disabled: true  
+  config.vm.synced_folder '../', '/home/vagrant/'  
   config.vm.hostname = "p4"
   config.vm.provision "file", source: "p4-logo.png",   destination: "/home/vagrant/vm/p4-logo.png"
   config.vm.provision "file", source: "p4_16-mode.el", destination: "/home/vagrant/vm/p4_16-mode.el"

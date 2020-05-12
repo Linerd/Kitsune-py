@@ -68,6 +68,16 @@ class SwitchConnection(object):
             self.requests_stream.put(request)
             for item in self.stream_msg_resp:
                 return item # just one
+    
+    def StreamMessage(self, update_type, dry_run=False):
+        request = p4runtime_pb2.StreamMessageRequest()
+        if dry_run:
+            print "P4Runtime Stream Message ", update_type
+        else:
+            self.requests_stream.put(request)
+            for item in self.stream_msg_resp:
+                if item.WhichOneOf('update') == update_type:
+                    yield getattr(item, update_type)
 
     def SetForwardingPipelineConfig(self, p4info, dry_run=False, **kwargs):
         device_config = self.buildDeviceConfig(**kwargs)

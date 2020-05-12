@@ -3,9 +3,6 @@
 # Print commands and exit on errors
 set -xe
 
-# DEBIAN_FRONTEND=noninteractive sudo add-apt-repository -y ppa:webupd8team/sublime-text-3
-# DEBIAN_FRONTEND=noninteractive sudo add-apt-repository -y ppa:webupd8team/atom
-
 apt-get update
 
 KERNEL=$(uname -r)

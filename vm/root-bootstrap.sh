@@ -61,19 +61,19 @@ apt-get install -y --no-install-recommends --fix-missing\
   xcscope-el \
   xterm
 
-useradd -m -d /home/p4 -s /bin/bash p4
-echo "p4:p4" | chpasswd
-echo "p4 ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99_p4
-chmod 440 /etc/sudoers.d/99_p4
-usermod -aG vboxsf p4
+# useradd -m -d /home/p4 -s /bin/bash p4
+# echo "p4:p4" | chpasswd
+# echo "p4 ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99_p4
+# chmod 440 /etc/sudoers.d/99_p4
+# usermod -aG vboxsf p4
 
 # Disable screensaver
-apt-get -y remove light-locker
+# apt-get -y remove light-locker
 
 # Automatically log into the P4 user
-cat << EOF | tee -a /etc/lightdm/lightdm.conf.d/10-lightdm.conf
-[SeatDefaults]
-autologin-user=p4
-autologin-user-timeout=0
-user-session=Lubuntu
-EOF
+# cat << EOF | tee -a /etc/lightdm/lightdm.conf.d/10-lightdm.conf
+# [SeatDefaults]
+# autologin-user=p4
+# autologin-user-timeout=0
+# user-session=Lubuntu
+# EOF

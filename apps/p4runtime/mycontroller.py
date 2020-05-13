@@ -5,7 +5,11 @@ import os
 import sys
 import threading
 from time import sleep
+from scapy.all import *
+
+import binascii
 from sdnator_due import *
+
 
 # Import P4Runtime lib from parent utils dir
 # Probably there's a better way of doing this.
@@ -110,7 +114,7 @@ def dropBySrcIP(p4info_helper, sw, srcIP):
         srcIP {str}
     """
     table_entry = p4info_helper.buildTableEntry(
-        table_name="MyIngress.ipv4_lpm",
+        table_name="MyIngress.drop_table",
         match_fields={
             "hdr.ipv4.srcAddr": (srcIP, 32)
         },
@@ -118,7 +122,8 @@ def dropBySrcIP(p4info_helper, sw, srcIP):
     )
     sw.WriteTableEntry(table_entry)
 
-def listenAndEmitPackets(sw, due):
+
+def listenAndEmitPackets(sw, p4info_helper, due):
     """
     Stream packets from grpcs
 
@@ -128,8 +133,10 @@ def listenAndEmitPackets(sw, due):
     """
     dataKey = "p4runtime::packet.%s" % sw.name
     for pkt in sw.StreamMessage('packet'):
-        print pkt
-        # due.write(dataKey, pkt)
+        # handle IP only
+        pkt = Ether(pkt.payload)
+        if IP in pkt:
+            due.write(dataKey, binascii.hexlify(str(pkt)))
 
 def readTableRules(p4info_helper, sw):
     """
@@ -227,15 +234,6 @@ def main(p4info_file_path, bmv2_file_path):
         readTableRules(p4info_helper, s1)
         readTableRules(p4info_helper, s2)
 
-        # Print the tunnel counters every 2 seconds
-        # while True:
-        #     sleep(2)
-        #     print '\n----- Reading tunnel counters -----'
-        #     printCounter(p4info_helper, s1, "MyIngress.ingressTunnelCounter", 100)
-        #     printCounter(p4info_helper, s2, "MyIngress.egressTunnelCounter", 100)
-        #     printCounter(p4info_helper, s2, "MyIngress.ingressTunnelCounter", 200)
-        #     printCounter(p4info_helper, s1, "MyIngress.egressTunnelCounter", 200)
-
         # init due
         due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
         due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
@@ -244,16 +242,33 @@ def main(p4info_file_path, bmv2_file_path):
 
         # listen for packet and send over to SDNator
         # NOTE: using s1 as example here
-        emitter = threading.Thread(target=listenAndEmitPackets, args=(s1, due))
+        emitter = threading.Thread(target=listenAndEmitPackets, args=(s1, p4info_helper, due))
         emitter.setDaemon(True)
         emitter.start()
 
         # listen for remote command
         o_attacker_ip = due.observe("kitsune::attacker_ip")
-        o_attacker_ip.subscribe(on_next = lambda d: dropBySrcIP(p4info_helper, s1, d[0]))
+        dropped = set()
+        def drop(ip):
+            if ip in dropped:
+                print "%s should be dropped already!" % ip
+            else:
+                print "Writing drop entry..."
+                dropped.add(ip)
+                dropBySrcIP(p4info_helper, s1, ip)
+        o_attacker_ip.subscribe(on_next = lambda d: drop(d[0]))
 
         # keep the app running
         due.wait()
+
+        # Print the tunnel counters every 2 seconds
+        # while True:
+        #     sleep(2)
+        #     print '\n----- Reading tunnel counters -----'
+        #     printCounter(p4info_helper, s1, "MyIngress.ingressTunnelCounter", 100)
+        #     printCounter(p4info_helper, s2, "MyIngress.egressTunnelCounter", 100)
+        #     printCounter(p4info_helper, s2, "MyIngress.ingressTunnelCounter", 200)
+        #     printCounter(p4info_helper, s1, "MyIngress.egressTunnelCounter", 200)
 
     except KeyboardInterrupt:
         print " Shutting down."

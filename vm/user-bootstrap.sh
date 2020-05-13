@@ -3,7 +3,7 @@
 # Print script commands and exit on errors.
 set -xe
 
-cd /home/p4
+cd ~
 
 #Src 
 BMV2_COMMIT="b447ac4c0cfd83e5e72a3cc6120251c1e91128ab"  # August 10, 2019

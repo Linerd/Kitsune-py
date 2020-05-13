@@ -15,7 +15,7 @@ ssh-keyscan github.com >> ~/.ssh/known_hosts
 git clone git@github.com:Linerd/SDNator.git
 cd SDNator/src/due
 git checkout due-py2
-pip install -r requirements.txt
+sudo pip install -r requirements.txt
 sudo python setup.py install
 
 cd ~
@@ -25,6 +25,11 @@ sudo apt-get -y install default-jre
 
 #mysql for python2
 pip install mysql-connector-python
+
+#other pip
+pip install scapy
+pip install numpy==1.14.6 scipy==1.0.1
+pip install cython
 
 #mongodb on VM
 wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -

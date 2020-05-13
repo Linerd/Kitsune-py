@@ -253,7 +253,7 @@ def main(p4info_file_path, bmv2_file_path):
             if ip in dropped:
                 print "%s should be dropped already!" % ip
             else:
-                print "Writing drop entry..."
+                print "Writing drop entry for %s..." % ip
                 dropped.add(ip)
                 dropBySrcIP(p4info_helper, s1, ip)
         o_attacker_ip.subscribe(on_next = lambda d: drop(d[0]))

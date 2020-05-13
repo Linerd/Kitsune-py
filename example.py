@@ -59,19 +59,22 @@ while True:
 print('Train Phase Completed')
 
 def proc_incoming_packet(pkt):
-    raw_pkt = raw(binascii.unhexlify(pkt))
-    pkt = IP(raw_pkt)
-
+    pkt = Ether(binascii.unhexlify(pkt))
     rmse = K.proc_next_packet_due(pkt)
-
+    
     # Per the paper, rmse is normalized so that rmse larger than 1 indicates anomaly
     if rmse > 1:
-        due.write('kitsune::attacker_ip', binascii.hexlify(bytes(pkt)))
+        due.write('kitsune::attacker_ip', pkt.src)
     
-    print(rmse, raw_pkt)
+    print(rmse, pkt)
 
-predicter = due.observe('p4runtime::packet')
-predicter.subscribe(on_next=lambda d: proc_incoming_packet(d[0]))
+
+def handle_error(e):
+    print e
+
+predicter = due.observe('p4runtime::packet.*')
+predicter.subscribe(on_next=lambda d: proc_incoming_packet(d[0]), 
+                    on_error=lambda e: handle_error(e))
 
 print("=========== Due Listener started. Ctrl/Cmd + C to exit ============") 
 due.wait()

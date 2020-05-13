@@ -248,8 +248,15 @@ def main(p4info_file_path, bmv2_file_path):
 
         # listen for remote command
         o_attacker_ip = due.observe("kitsune::attacker_ip")
-        o_attacker_ip.subscribe(on_next = lambda d: dropBySrcIP(
-            p4info_helper, s1, d[0]))
+        dropped = set()
+        def drop(ip):
+            if ip in dropped:
+                print "%s should be dropped already!" % ip
+            else:
+                print "Writing drop entry..."
+                dropped.add(ip)
+                dropBySrcIP(p4info_helper, s1, ip)
+        o_attacker_ip.subscribe(on_next = lambda d: drop(d[0]))
 
         # keep the app running
         due.wait()

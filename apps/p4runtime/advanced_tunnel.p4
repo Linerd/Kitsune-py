@@ -1,4 +1,3 @@
-/* -*- P4_16 -*- */
 #include <core.p4>
 #include <v1model.p4>
 
@@ -107,6 +106,10 @@ control MyIngress(inout headers hdr,
     counter(MAX_TUNNEL_ID, CounterType.packets_and_bytes) ingressTunnelCounter;
     counter(MAX_TUNNEL_ID, CounterType.packets_and_bytes) egressTunnelCounter;
 
+    action mirror() {
+        clone(CloneType.I2E, 0);
+    }
+
     action drop() {
         mark_to_drop(standard_metadata);
     }
@@ -141,7 +144,6 @@ control MyIngress(inout headers hdr,
     table ipv4_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
-            hdr.ipv4.srcAddr: lpm;
         }
         actions = {
             ipv4_forward;
@@ -150,6 +152,17 @@ control MyIngress(inout headers hdr,
             NoAction;
         }
         size = 1024;
+        default_action = NoAction();
+    }
+    
+    table drop_table {
+        key = {
+            hdr.ipv4.srcAddr: lpm;
+        }
+        actions = {
+            drop;
+            NoAction;
+        }
         default_action = NoAction();
     }
 
@@ -167,6 +180,8 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
+        mirror();
+
         if (hdr.ipv4.isValid() && !hdr.myTunnel.isValid()) {
             // Process only non-tunneled IPv4 packets.
             ipv4_lpm.apply();
@@ -175,6 +190,11 @@ control MyIngress(inout headers hdr,
         if (hdr.myTunnel.isValid()) {
             // Process all tunneled packets.
             myTunnel_exact.apply();
+        }
+
+        if (hdr.ipv4.isValid()) {
+            // process entries to drop
+            drop_table.apply();
         }
     }
 }

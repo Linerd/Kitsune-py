@@ -76,8 +76,9 @@ class SwitchConnection(object):
         else:
             self.requests_stream.put(request)
             for item in self.stream_msg_resp:
-                if item.WhichOneOf('update') == update_type:
-                    yield getattr(item, update_type)
+                r = getattr(item, update_type, None)
+                if r:
+                    yield r
 
     def SetForwardingPipelineConfig(self, p4info, dry_run=False, **kwargs):
         device_config = self.buildDeviceConfig(**kwargs)

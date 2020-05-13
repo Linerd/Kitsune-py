@@ -55,13 +55,13 @@ class FE:
         # TODO_KEN: remove break
         count = 0
         for each in raw_packets:
-            pkt = raw(binascii.unhexlify(each['value']))
+            pkt = binascii.unhexlify(each['value'])
             pkt = IP(pkt)
             self.scapyin.append(pkt)
 
             # TODO_KEN: remove break
             count +=1 
-            if count == 550:
+            if count == 550 + 1:
                 break
 
         self.limit = len(self.scapyin)
@@ -117,11 +117,8 @@ class FE:
             elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                 srcIP = packet.src  # src MAC
                 dstIP = packet.dst  # dst MAC
-        else:
-            return []
 
         self.curPacketIndx = self.curPacketIndx + 1
-
 
         ### Extract Features
         try:

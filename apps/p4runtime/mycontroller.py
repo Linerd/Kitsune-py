@@ -75,7 +75,7 @@ def dropBySrcIP(p4info_helper, sw, srcIP):
     table_entry = p4info_helper.buildTableEntry(
         table_name="MyIngress.drop_table",
         match_fields={
-            "hdr.ipv4.srcAddr": (srcIP, 32)
+            "hdr.ipv4.srcAddr": (str(srcIP), 32)
         },
         action_name="MyIngress.drop"
     )
@@ -244,9 +244,9 @@ def main(p4info_file_path, bmv2_file_path):
             if ip in dropped:
                 print "%s should be dropped already!" % ip
             else:
-                print "Writing drop entry for %s..." % ip
                 dropped.add(ip)
-                dropBySrcIP(p4info_helper, s1, ip)
+                print "Writing drop entry for %s" % ip 
+                # dropBySrcIP(p4info_helper, s1, ip)
         o_attacker_ip.subscribe(on_next = lambda d: drop(d[0]))
 
         # keep the app running

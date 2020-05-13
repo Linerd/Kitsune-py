@@ -18,7 +18,8 @@ capabilities = [{'dataKey': "sonata::newly_opened_connections.attacker_ip", 'fre
 due.init("sonata_producer_%d" % random.randint(0, 100000), PRODUCER | CONSUMER | COORDINATOR, capabilities=capabilities)
 
 # Write the first 55000 (train data) to DUE
-packets = rdpcap('mirai.pcap')
+# NOTE: using the smaller pcap for demo
+packets = rdpcap('mirai_mini.pcap')
 # Write packets into due
 curr_count = 0
 for pkt in packets:

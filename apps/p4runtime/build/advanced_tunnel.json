@@ -238,7 +238,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "advanced_tunnel.p4",
-        "line" : 240,
+        "line" : 241,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
@@ -279,7 +279,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "advanced_tunnel.p4",
-        "line" : 218,
+        "line" : 219,
         "column" : 1,
         "source_fragment" : "update_checksum( ..."
       },
@@ -869,40 +869,11 @@
         "column" : 8,
         "source_fragment" : "MyIngress"
       },
-      "init_table" : "tbl_mirror",
+      "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_mirror",
-          "id" : 0,
-          "source_info" : {
-            "filename" : "advanced_tunnel.p4",
-            "line" : 183,
-            "column" : 8,
-            "source_fragment" : "mirror()"
-          },
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [2],
-          "actions" : ["MyIngress.mirror"],
-          "base_default_next" : "node_3",
-          "next_tables" : {
-            "MyIngress.mirror" : "node_3"
-          },
-          "default_entry" : {
-            "action_id" : 2,
-            "action_const" : true,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
           "name" : "MyIngress.ipv4_lpm",
-          "id" : 1,
+          "id" : 0,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
             "line" : 144,
@@ -925,12 +896,12 @@
           "direct_meters" : null,
           "action_ids" : [6, 7, 3, 0],
           "actions" : ["MyIngress.ipv4_forward", "MyIngress.myTunnel_ingress", "MyIngress.drop", "NoAction"],
-          "base_default_next" : "node_5",
+          "base_default_next" : "node_4",
           "next_tables" : {
-            "MyIngress.ipv4_forward" : "node_5",
-            "MyIngress.myTunnel_ingress" : "node_5",
-            "MyIngress.drop" : "node_5",
-            "NoAction" : "node_5"
+            "MyIngress.ipv4_forward" : "node_4",
+            "MyIngress.myTunnel_ingress" : "node_4",
+            "MyIngress.drop" : "node_4",
+            "NoAction" : "node_4"
           },
           "default_entry" : {
             "action_id" : 0,
@@ -941,10 +912,10 @@
         },
         {
           "name" : "MyIngress.myTunnel_exact",
-          "id" : 2,
+          "id" : 1,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
-            "line" : 169,
+            "line" : 170,
             "column" : 10,
             "source_fragment" : "myTunnel_exact"
           },
@@ -964,11 +935,11 @@
           "direct_meters" : null,
           "action_ids" : [8, 9, 5],
           "actions" : ["MyIngress.myTunnel_forward", "MyIngress.myTunnel_egress", "MyIngress.drop"],
-          "base_default_next" : "node_7",
+          "base_default_next" : "node_6",
           "next_tables" : {
-            "MyIngress.myTunnel_forward" : "node_7",
-            "MyIngress.myTunnel_egress" : "node_7",
-            "MyIngress.drop" : "node_7"
+            "MyIngress.myTunnel_forward" : "node_6",
+            "MyIngress.myTunnel_egress" : "node_6",
+            "MyIngress.drop" : "node_6"
           },
           "default_entry" : {
             "action_id" : 5,
@@ -979,7 +950,7 @@
         },
         {
           "name" : "MyIngress.drop_table",
-          "id" : 3,
+          "id" : 2,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
             "line" : 158,
@@ -1000,15 +971,16 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4, 1],
-          "actions" : ["MyIngress.drop", "NoAction"],
+          "action_ids" : [4, 2, 1],
+          "actions" : ["MyIngress.drop", "MyIngress.mirror", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
             "MyIngress.drop" : null,
+            "MyIngress.mirror" : null,
             "NoAction" : null
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 2,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1018,7 +990,7 @@
       "action_profiles" : [],
       "conditionals" : [
         {
-          "name" : "node_3",
+          "name" : "node_2",
           "id" : 0,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
@@ -1062,10 +1034,10 @@
             }
           },
           "true_next" : "MyIngress.ipv4_lpm",
-          "false_next" : "node_5"
+          "false_next" : "node_4"
         },
         {
-          "name" : "node_5",
+          "name" : "node_4",
           "id" : 1,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
@@ -1085,10 +1057,10 @@
             }
           },
           "true_next" : "MyIngress.myTunnel_exact",
-          "false_next" : "node_7"
+          "false_next" : "node_6"
         },
         {
-          "name" : "node_7",
+          "name" : "node_6",
           "id" : 2,
           "source_info" : {
             "filename" : "advanced_tunnel.p4",
@@ -1117,7 +1089,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "advanced_tunnel.p4",
-        "line" : 206,
+        "line" : 207,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
@@ -1133,7 +1105,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "advanced_tunnel.p4",
-        "line" : 218,
+        "line" : 219,
         "column" : 1,
         "source_fragment" : "update_checksum( ..."
       },

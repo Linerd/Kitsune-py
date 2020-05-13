@@ -161,9 +161,10 @@ control MyIngress(inout headers hdr,
         }
         actions = {
             drop;
+            mirror;
             NoAction;
         }
-        default_action = NoAction();
+        default_action = mirror();
     }
 
     table myTunnel_exact {
@@ -180,8 +181,7 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
-        mirror();
-
+        
         if (hdr.ipv4.isValid() && !hdr.myTunnel.isValid()) {
             // Process only non-tunneled IPv4 packets.
             ipv4_lpm.apply();
@@ -196,6 +196,7 @@ control MyIngress(inout headers hdr,
             // process entries to drop
             drop_table.apply();
         }
+
     }
 }
 

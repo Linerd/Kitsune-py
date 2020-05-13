@@ -10,3 +10,4 @@ __pycache__/
 .Xaut*
 logs/
 pcaps/
+.bash*

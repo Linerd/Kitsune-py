@@ -40,3 +40,13 @@ class Kitsune:
         # process KitNET
         return self.AnomDetector.process(x)  # will train during the grace periods, then execute on all the rest.
 
+    def proc_next_packet_due(self, pkt):
+        # create feature vector
+        x = self.FE.get_next_vector_due(pkt)
+        if len(x) == 0:
+            print('Error or no packets left')
+            return -1
+
+        # process KitNET
+        return self.AnomDetector.process(x)  # will train during the grace periods, then execute on all the rest.
+

@@ -2,6 +2,8 @@ from Kitsune import Kitsune
 import numpy as np
 import time
 from sdnator_due import *
+import binascii
+from scapy.all import *
 
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
@@ -41,12 +43,27 @@ ADgrace = 50000 #the number of instances used to train the anomaly detector (ens
 # Build Kitsune
 K = Kitsune(dataKey,packet_limit,maxAE,FMgrace,ADgrace)
 
-print("Running Kitsune:")
-RMSEs = []
+# print("Running Kitsune:")
+# RMSEs = []
+# i = 0
+# start = time.time()
+# # Here we process (train/execute) each individual packet.
+# # In this way, each observation is discarded after performing process() method.
+# while True:
+#     i+=1
+#     if i % 1000 == 0:
+#         print(i)
+#     rmse = K.proc_next_packet()
+#     if rmse == -1:
+#         break
+#     RMSEs.append(rmse)
+# stop = time.time()
+# print("Complete. Time elapsed: "+ str(stop - start))
+
+print("Running Kitsune with DUE:")
+
+print('Train Phase')
 i = 0
-start = time.time()
-# Here we process (train/execute) each individual packet.
-# In this way, each observation is discarded after performing process() method.
 while True:
     i+=1
     if i % 1000 == 0:
@@ -54,15 +71,26 @@ while True:
     rmse = K.proc_next_packet()
     if rmse == -1:
         break
-    RMSEs.append(rmse)
-stop = time.time()
-print("Complete. Time elapsed: "+ str(stop - start))
+print('Train Phase Completed')
+
+def proc_incoming_packet(pkt):
+    raw_pkt = raw(binascii.unhexlify(pkt))
+    pkt = IP(raw_pkt)
+
+    rmse = K.proc_next_packet_due(pkt)
+    print(rmse, raw_pkt)
+
+predicter = due.observe(interest)
+predicter.subscribe(on_next=lambda d: proc_incoming_packet(d[0]))
+
+print("=========== Due Listener started. Ctrl/Cmd + C to exit ============") 
+due.wait()
 
 
-# Here we demonstrate how one can fit the RMSE scores to a log-normal distribution (useful for finding/setting a cutoff threshold \phi)
-from scipy.stats import norm
-benignSample = np.log(RMSEs[FMgrace+ADgrace+1:100000])
-logProbs = norm.logsf(np.log(RMSEs), np.mean(benignSample), np.std(benignSample))
+# # Here we demonstrate how one can fit the RMSE scores to a log-normal distribution (useful for finding/setting a cutoff threshold \phi)
+# from scipy.stats import norm
+# benignSample = np.log(RMSEs[FMgrace+ADgrace+1:100000])
+# logProbs = norm.logsf(np.log(RMSEs), np.mean(benignSample), np.std(benignSample))
 
 # # plot the RMSE anomaly scores
 # print("Plotting results")

@@ -25,7 +25,7 @@
 
 import sys
 import numpy
-from KitNET.utils import *
+from utils import *
 import json
 
 class dA_params:

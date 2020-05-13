@@ -1,6 +1,6 @@
 import numpy as np
-import KitNET.dA as AE
-import KitNET.corClust as CC
+import dA as AE
+import corClust as CC
 
 # This class represents a KitNET machine learner.
 # KitNET is a lightweight online anomaly detection algorithm based on an ensemble of autoencoders.

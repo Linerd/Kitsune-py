@@ -245,9 +245,9 @@ def main(p4info_file_path, bmv2_file_path):
                 print "%s should be dropped already!" % ip
             else:
                 dropped.add(ip)
-                print "Writing drop entry for %s" % ip
+                print "Writing drop entry for %s, ip %s" % (s1.name, ip)
                 # NOTE: uncomment below for real blocking behavior 
-                # dropBySrcIP(p4info_helper, s1, ip)
+                dropBySrcIP(p4info_helper, s1, ip)
         o_attacker_ip.subscribe(on_next = lambda d: drop(d[0]))
 
         # keep the app running

@@ -1,10 +1,10 @@
 
-[2020-05-13 02:59:19.194] /p4.v1.P4Runtime/SetForwardingPipelineConfig
+[2020-05-13 19:10:28.583] /p4.v1.P4Runtime/SetForwardingPipelineConfig
 ---
 Message too long (37321 bytes)! Skipping log...
 ---
 
-[2020-05-13 02:59:19.223] /p4.v1.P4Runtime/Write
+[2020-05-13 19:10:28.610] /p4.v1.P4Runtime/Write
 ---
 election_id {
   low: 1
@@ -35,7 +35,7 @@ updates {
 }
 ---
 
-[2020-05-13 02:59:19.228] /p4.v1.P4Runtime/Write
+[2020-05-13 19:10:28.615] /p4.v1.P4Runtime/Write
 ---
 election_id {
   low: 1
@@ -65,7 +65,7 @@ updates {
 }
 ---
 
-[2020-05-13 02:59:19.241] /p4.v1.P4Runtime/Write
+[2020-05-13 19:10:28.629] /p4.v1.P4Runtime/Write
 ---
 election_id {
   low: 1
@@ -99,64 +99,10 @@ updates {
 }
 ---
 
-[2020-05-13 02:59:19.244] /p4.v1.P4Runtime/Read
+[2020-05-13 19:10:28.632] /p4.v1.P4Runtime/Read
 ---
 entities {
   table_entry {
-  }
-}
----
-
-[2020-05-13 02:59:20.015] /p4.v1.P4Runtime/Write
----
-election_id {
-  low: 1
-}
-updates {
-  type: INSERT
-  entity {
-    table_entry {
-      table_id: 33598219
-      match {
-        field_id: 1
-        lpm {
-          value: "\n\000\001\001"
-          prefix_len: 32
-        }
-      }
-      action {
-        action {
-          action_id: 16805608
-        }
-      }
-    }
-  }
-}
----
-
-[2020-05-13 02:59:21.033] /p4.v1.P4Runtime/Write
----
-election_id {
-  low: 1
-}
-updates {
-  type: INSERT
-  entity {
-    table_entry {
-      table_id: 33598219
-      match {
-        field_id: 1
-        lpm {
-          value: "\n\000\001\001"
-          prefix_len: 32
-        }
-      }
-      action {
-        action {
-          action_id: 16805608
-        }
-      }
-    }
   }
 }
 ---

@@ -49,7 +49,7 @@ class FE:
 
     def __prep__(self):
         print("Reading training dataset packets via DUE...")
-        raw_packets = due.get({'dataKey': "sonata::runtime.packet"})
+        raw_packets = due.get({'dataKey': "kitsune::train.packet"})
         self.scapyin = []
 
         # TODO_KEN: remove break
@@ -61,7 +61,7 @@ class FE:
 
             # TODO_KEN: remove break
             count +=1 
-            if count == 10000:
+            if count == 550:
                 break
 
         self.limit = len(self.scapyin)

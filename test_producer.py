@@ -6,7 +6,7 @@ import binascii
 packets = rdpcap('mirai.pcap')
 
 # Set up DUE
-capabilities = [{'dataKey': 'sonata::runtime.packet', 'frequency': {'min': 0, 'max': 100}}]
+capabilities = [{'dataKey': 'p4runtime::packet', 'frequency': {'min': 0, 'max': 100}}]
 # set drivers
 due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
 due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
@@ -20,6 +20,8 @@ for pkt in packets:
 
     curr_count += 1
     if curr_count % 1000 == 0: print(curr_count)
-    if curr_count >= 50000 + 5000:
+    # if curr_count >= 50000 + 5000:
+    if curr_count >= 500 + 50:
+    # if curr_count >= 20000:
         # wrpcap('test.pcap', pkt, append=True)  #appends packet to output file
-        due.write('sonata::runtime.packet', binascii.hexlify(bytes(pkt)))
+        due.write('p4runtime::packet', binascii.hexlify(bytes(pkt)))

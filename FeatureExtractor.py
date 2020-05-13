@@ -159,7 +159,7 @@ class FE:
         else:
             srcproto = ''
             dstproto = ''
-
+        
         srcMAC = packet.src
         dstMAC = packet.dst
         if srcproto == '':  # it's a L2/L1 level protocol
@@ -176,10 +176,7 @@ class FE:
             elif srcIP + srcproto + dstIP + dstproto == '':  # some other protocol
                 srcIP = packet.src  # src MAC
                 dstIP = packet.dst  # dst MAC
-        else:
-            print('FE else')
-            return []
-
+        
         self.curPacketIndx = self.curPacketIndx + 1
 
 

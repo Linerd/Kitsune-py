@@ -8,3 +8,5 @@ __pycache__/
 .sudo*
 .wget*
 .Xaut*
+logs/
+pcaps/

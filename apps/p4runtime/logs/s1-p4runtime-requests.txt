@@ -1,10 +1,10 @@
 
-[2020-05-13 20:10:20.872] /p4.v1.P4Runtime/SetForwardingPipelineConfig
+[2020-05-13 22:28:51.697] /p4.v1.P4Runtime/SetForwardingPipelineConfig
 ---
 Message too long (37321 bytes)! Skipping log...
 ---
 
-[2020-05-13 20:10:20.895] /p4.v1.P4Runtime/Write
+[2020-05-13 22:28:51.739] /p4.v1.P4Runtime/Write
 ---
 election_id {
   low: 1
@@ -35,7 +35,7 @@ updates {
 }
 ---
 
-[2020-05-13 20:10:20.898] /p4.v1.P4Runtime/Write
+[2020-05-13 22:28:51.745] /p4.v1.P4Runtime/Write
 ---
 election_id {
   low: 1
@@ -65,7 +65,7 @@ updates {
 }
 ---
 
-[2020-05-13 20:10:20.908] /p4.v1.P4Runtime/Write
+[2020-05-13 22:28:51.761] /p4.v1.P4Runtime/Write
 ---
 election_id {
   low: 1
@@ -99,7 +99,102 @@ updates {
 }
 ---
 
-[2020-05-13 20:10:20.911] /p4.v1.P4Runtime/Read
+[2020-05-13 22:28:51.764] /p4.v1.P4Runtime/Write
+---
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 33574068
+      match {
+        field_id: 1
+        lpm {
+          value: "\n\000\003\003"
+          prefix_len: 32
+        }
+      }
+      action {
+        action {
+          action_id: 16841214
+          params {
+            param_id: 1
+            value: "\001,"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2020-05-13 22:28:51.767] /p4.v1.P4Runtime/Write
+---
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 33568551
+      match {
+        field_id: 1
+        exact {
+          value: "\001,"
+        }
+      }
+      action {
+        action {
+          action_id: 16837959
+          params {
+            param_id: 1
+            value: "\000\003"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2020-05-13 22:28:51.782] /p4.v1.P4Runtime/Write
+---
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 33568551
+      match {
+        field_id: 1
+        exact {
+          value: "\001\220"
+        }
+      }
+      action {
+        action {
+          action_id: 16842425
+          params {
+            param_id: 1
+            value: "\010\000\000\000\001\021"
+          }
+          params {
+            param_id: 2
+            value: "\000\001"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2020-05-13 22:28:51.802] /p4.v1.P4Runtime/Read
 ---
 entities {
   table_entry {

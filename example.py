@@ -4,6 +4,7 @@ import time
 from sdnator_due import *
 import binascii
 from scapy.all import *
+from config import *
 
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
@@ -37,10 +38,6 @@ packet_limit = np.Inf #the number of packets to process
 
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer
-# FMgrace = 5000 #the number of instances taken to learn the feature mapping (the ensemble's architecture)
-# ADgrace = 50000 #the number of instances used to train the anomaly detector (ensemble itself)
-FMgrace = 50 #the number of instances taken to learn the feature mapping (the ensemble's architecture)
-ADgrace = 500 #the number of instances used to train the anomaly detector (ensemble itself)
 
 # Build Kitsune
 K = Kitsune(dataKey,packet_limit,maxAE,FMgrace,ADgrace)
@@ -49,13 +46,32 @@ print("Running Kitsune with DUE:")
 
 print('Train Phase')
 i = 0
+# normal_count = 0
+# attack_count = 0
 while True:
-    i+=1
     if i % 1000 == 0:
         print(i)
     rmse = K.proc_next_packet()
     if rmse == -1:
         break
+
+    # Used for generating new pcap containing both normal and attack packets
+    # # Starting at the 100000th packet to get rid of the training data
+    # if i > 100000:
+    #     if rmse != 0.0:
+    #         if rmse < 1:
+    #             # Normal traffic
+    #             if normal_count < NUMBER_OF_NORMAL_PACKETS:
+    #                 wrpcap('normal.pcap', pkt, append=True)
+    #                 normal_count += 1
+    #         else:
+    #             # Attack traffic
+    #             if attack_count < NUMBER_OF_ATTACK_PACKETS:
+    #                 wrpcap('attack.pcap', pkt, append=True)
+    #                 attack_count += 1
+    # i += 1
+    i+=1
+
 print('Train Phase Completed')
 
 def proc_incoming_packet(pkt):

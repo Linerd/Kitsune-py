@@ -14,6 +14,7 @@ import os.path
 import platform
 import subprocess
 from sdnator_due import *
+from config import *
 
 
 #Extracts Kitsune features from given pcap file one packet at a time using "get_next_vector()"
@@ -52,17 +53,17 @@ class FE:
         raw_packets = due.get({'dataKey': "kitsune::train.packet"})
         self.scapyin = []
 
-        # TODO_KEN: remove break
         count = 0
         for each in raw_packets:
             pkt = binascii.unhexlify(each['value'])
             pkt = IP(pkt)
             self.scapyin.append(pkt)
 
-            # TODO_KEN: remove break
-            count +=1 
-            if count == 550 + 1:
+            if count == ADgrace + FMgrace:
                 break
+
+            count +=1 
+            
 
         self.limit = len(self.scapyin)
         # We are setting the parse_type to scapy because we will be getting IP packets from DUE, instead of reading from file

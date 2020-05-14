@@ -6,13 +6,11 @@ import random
 import struct
 import binascii
 
-from scapy.all import sendp, send, get_if_list, get_if_hwaddr
-from scapy.all import Packet
-from scapy.all import Ether, IP, UDP, TCP
+from scapy.all import *
 
-# Import config from parent directory
-sys.path.append("../")
-from config import *
+# # Import config from parent directory
+# sys.path.append("../")
+# from config import *
 
 def get_if():
     ifs=get_if_list()
@@ -26,16 +24,6 @@ def get_if():
         exit(1)
     return iface
 
-def send_traffic():
-    # Read in normal traffic
-    normal_packets = rdpcap('normal.pcap')
-
-    # Read in attack traffic
-    attack_packets = rdpcap('mirai.pcap')
-
-    # Send traffic
-    
-
 def main():
 
     if len(sys.argv)<3:
@@ -46,11 +34,13 @@ def main():
     iface = get_if()
 
     print "sending on interface %s to %s" % (iface, str(addr))
-    pkt =  Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
-    pkt = pkt /IP(dst=addr) / TCP(dport=1234, sport=random.randint(49152,65535)) / sys.argv[2]
-    pkt.show2()
-    sendp(pkt, iface=iface, verbose=False)
 
+    # new.pcap file contains 100000 packets, where 90000 of them are attack packets and 10000 are normal packets,
+    # identified by a Kitsune model trained with 55000 training packets
+    packets = rdpcap('new.pcap')
+
+    for pkt in packets:
+        sendp(pkt, iface=iface, verbose=False)
 
 if __name__ == '__main__':
     main()

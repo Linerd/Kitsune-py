@@ -31,6 +31,9 @@ def process_testing_dataset():
     packets = rdpcap('normal.pcap')
     for pkt in packets:
         new_pkt = pkt
+        new_pkt.src = "08:00:00:%02x:%02x:%02x" % (random.randint(0, 255),
+                             random.randint(0, 255),
+                             random.randint(0, 255))
         new_pkt.dst = dst_mac
         new_packets.append(binascii.hexlify(bytes(new_pkt)))
 
@@ -48,5 +51,6 @@ def process_testing_dataset():
         pickle.dump(new_packets, f)
     
 if __name__ == "__main__":
-    # process_testing_dataset()
-    # process_training_dataset()
+    process_testing_dataset()
+    process_training_dataset()
+    pass

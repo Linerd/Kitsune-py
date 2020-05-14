@@ -66,7 +66,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
             TYPE_MYTUNNEL: parse_myTunnel;
-            TYPE_IPV4: parse_ipv4;
+            // TYPE_IPV4: parse_ipv4;
             default: accept;
         }
     }
@@ -74,7 +74,7 @@ parser MyParser(packet_in packet,
     state parse_myTunnel {
         packet.extract(hdr.myTunnel);
         transition select(hdr.myTunnel.proto_id) {
-            TYPE_IPV4: parse_ipv4;
+            // TYPE_IPV4: parse_ipv4;
             default: accept;
         }
     }
@@ -154,8 +154,21 @@ control MyIngress(inout headers hdr,
         size = 1024;
         default_action = NoAction();
     }
+
+    table ether_exact {
+        key = {
+            hdr.ethernet.dstAddr: exact;
+        }
+        actions = {
+            myTunnel_ingress;
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
     
-    table drop_table {
+    table drop_table_ipv4 {
         key = {
             hdr.ipv4.srcAddr: lpm;
         }
@@ -164,6 +177,20 @@ control MyIngress(inout headers hdr,
             mirror;
             NoAction;
         }
+        size = 1024;
+        default_action = mirror();
+    }
+
+    table drop_table_ether {
+        key = {
+            hdr.ethernet.srcAddr: exact;
+        }
+        actions = {
+            drop;
+            mirror;
+            NoAction;
+        }
+        size = 1024;
         default_action = mirror();
     }
 
@@ -182,9 +209,14 @@ control MyIngress(inout headers hdr,
 
     apply {
         
-        if (hdr.ipv4.isValid() && !hdr.myTunnel.isValid()) {
-            // Process only non-tunneled IPv4 packets.
-            ipv4_lpm.apply();
+        // if (hdr.ipv4.isValid() && !hdr.myTunnel.isValid()) {
+        //     // Process only non-tunneled IPv4 packets.
+        //     ipv4_lpm.apply();
+        // }
+
+        if (hdr.ethernet.isValid() && !hdr.myTunnel.isValid()) {
+            // Process only non-tunneled L2 packets.
+            ether_exact.apply();
         }
 
         if (hdr.myTunnel.isValid()) {
@@ -192,10 +224,15 @@ control MyIngress(inout headers hdr,
             myTunnel_exact.apply();
         }
 
-        if (hdr.ipv4.isValid()) {
-            // process entries to drop
-            drop_table.apply();
+        if (hdr.ethernet.isValid()) {
+            // process L2 entries to drop
+            drop_table_ether.apply();
         }
+
+        // if (hdr.ipv4.isValid()) {
+        //     // process entries to drop
+        //     drop_table_ipv4.apply();
+        // }
 
     }
 }

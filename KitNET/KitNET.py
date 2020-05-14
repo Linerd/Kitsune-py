@@ -49,7 +49,6 @@ class KitNET:
     #x: a numpy array of length n
     #Note: KitNET automatically performs 0-1 normalization on all attributes.
     def process(self,x):
-        print self.n_trained, self.FM_grace_period + self.AD_grace_period
         if self.n_trained > self.FM_grace_period + self.AD_grace_period: #If both the FM and AD are in execute-mode
             print "execute"
             return self.execute(x)

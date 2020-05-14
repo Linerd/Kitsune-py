@@ -20,16 +20,23 @@ import p4runtime_lib.bmv2
 from p4runtime_lib.switch import ShutdownAllSwitchConnections
 import p4runtime_lib.helper
 
-SWITCH_TO_HOST_PORT = 1
-SWITCH_TO_SWITCH_PORT = 2
-
 
 def writeTunnelRules(p4info_helper, ingress_sw, egress_sw, tunnel_id,
                      dst_eth_addr, dst_ip_addr, forward_port, egress_port):
+    # table_entry = p4info_helper.buildTableEntry(
+    #     table_name="MyIngress.ipv4_lpm",
+    #     match_fields={
+    #         "hdr.ipv4.dstAddr": (dst_ip_addr, 32)
+    #     },
+    #     action_name="MyIngress.myTunnel_ingress",
+    #     action_params={
+    #         "dst_id": tunnel_id,
+    #     })
+    # ingress_sw.WriteTableEntry(table_entry)
     table_entry = p4info_helper.buildTableEntry(
-        table_name="MyIngress.ipv4_lpm",
+        table_name="MyIngress.ether_exact",
         match_fields={
-            "hdr.ipv4.dstAddr": (dst_ip_addr, 32)
+            "hdr.ethernet.dstAddr": dst_eth_addr
         },
         action_name="MyIngress.myTunnel_ingress",
         action_params={
@@ -37,6 +44,7 @@ def writeTunnelRules(p4info_helper, ingress_sw, egress_sw, tunnel_id,
         })
     ingress_sw.WriteTableEntry(table_entry)
     print "Installed ingress tunnel rule on %s" % ingress_sw.name
+
 
     table_entry = p4info_helper.buildTableEntry(
         table_name="MyIngress.myTunnel_exact",
@@ -63,19 +71,40 @@ def writeTunnelRules(p4info_helper, ingress_sw, egress_sw, tunnel_id,
     egress_sw.WriteTableEntry(table_entry)
     print "Installed egress tunnel rule on %s" % egress_sw.name
 
-def dropBySrcIP(p4info_helper, sw, srcIP):
+def dropByIP(p4info_helper, sw, ip, attr='srcAddr'):
     """
-    Add drop rule to switch by srcIP
+    Add drop rule to switch by ip
 
     Arguments:
         p4info_helper {P4InfoHelper}
         sw {Switch}
-        srcIP {str}
+        ip {str}
     """
+    print "Writing drop entry for %s, ip %s" % (sw.name, ip)
     table_entry = p4info_helper.buildTableEntry(
-        table_name="MyIngress.drop_table",
+        table_name="MyIngress.drop_table_ipv4",
         match_fields={
-            "hdr.ipv4.srcAddr": (str(srcIP), 32)
+            "hdr.ipv4.%s" % attr: (str(ip), 32)
+        },
+        action_name="MyIngress.drop"
+    )
+    sw.WriteTableEntry(table_entry)
+
+
+def dropByMac(p4info_helper, sw, mac_addr, attr='srcAddr'):
+    """
+    Add drop rule to switch by mac_addr
+
+    Arguments:
+        p4info_helper {P4InfoHelper}
+        sw {Switch}
+        mac_addr {str}
+    """
+    print "Writing drop entry for %s, mac_addr %s" % (sw.name, mac_addr)
+    table_entry = p4info_helper.buildTableEntry(
+        table_name="MyIngress.drop_table_ether",
+        match_fields={
+            "hdr.ethernet.%s" % attr: str(mac_addr)
         },
         action_name="MyIngress.drop"
     )
@@ -92,9 +121,9 @@ def listenAndEmitPackets(sw, p4info_helper, due):
     """
     dataKey = "p4runtime::packet.%s" % sw.name
     for pkt in sw.StreamMessage('packet'):
-        # handle IP only
+        # handle IP and ARP only
         pkt = Ether(pkt.payload)
-        if IP in pkt:
+        if pkt.haslayer(IP) or pkt.haslayer(ARP):
             due.write(dataKey, binascii.hexlify(str(pkt)))
 
 def readTableRules(p4info_helper, sw):
@@ -239,28 +268,30 @@ def main(p4info_file_path, bmv2_file_path):
 
         # listen for remote command
         o_attacker_ip = due.observe("kitsune::attacker_ip")
-        dropped = set()
-        def drop(ip):
-            if ip in dropped:
+        dropped_ips = set()
+        def drop_by_ip(ip):
+            if ip in dropped_ips:
                 print "%s should be dropped already!" % ip
             else:
-                dropped.add(ip)
-                print "Writing drop entry for %s, ip %s" % (s1.name, ip)
+                dropped_ips.add(ip)
                 # NOTE: uncomment below for real blocking behavior 
-                dropBySrcIP(p4info_helper, s1, ip)
-        o_attacker_ip.subscribe(on_next = lambda d: drop(d[0]))
+                dropByIP(p4info_helper, s1, ip)
+        o_attacker_ip.subscribe(on_next=lambda d: drop_by_ip(d[0]))
 
+        o_attacker_mac = due.observe("kitsune::attacker_mac")
+        dropped_macs = set()
+        def drop_by_mac(mac):
+            if mac in dropped_macs:
+                print "%s should be dropped already!" % mac
+            else:
+                dropped_macs.add(mac)
+                # NOTE: uncomment below for real blocking behavior
+                dropByMac(p4info_helper, s1, mac)
+        o_attacker_mac.subscribe(on_next=lambda d: drop_by_mac(d[0]))
+        
+        
         # keep the app running
         due.wait()
-
-        # Print the tunnel counters every 2 seconds
-        # while True:
-        #     sleep(2)
-        #     print '\n----- Reading tunnel counters -----'
-        #     printCounter(p4info_helper, s1, "MyIngress.ingressTunnelCounter", 100)
-        #     printCounter(p4info_helper, s2, "MyIngress.egressTunnelCounter", 100)
-        #     printCounter(p4info_helper, s2, "MyIngress.ingressTunnelCounter", 200)
-        #     printCounter(p4info_helper, s1, "MyIngress.egressTunnelCounter", 200)
 
     except KeyboardInterrupt:
         print " Shutting down."

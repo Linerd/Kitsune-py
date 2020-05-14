@@ -79,7 +79,8 @@ def proc_incoming_packet(pkt):
     rmse = K.proc_next_packet_due(pkt)
     # Per the paper, rmse is normalized so that rmse larger than 1 indicates anomaly
     if rmse > 1:
-        due.write('kitsune::attacker_ip', pkt['IP'].src)
+        # due.write('kitsune::attacker_ip', pkt['IP'].src)
+        due.write('kitsune::attacker_mac', pkt.src)
     
     print(rmse, pkt)
 

@@ -2,12 +2,9 @@
 import sys
 import struct
 import os
+import binascii
 
-from scapy.all import sniff, sendp, hexdump, get_if_list, get_if_hwaddr
-from scapy.all import Packet, IPOption
-from scapy.all import ShortField, IntField, LongField, BitField, FieldListField, FieldLenField
-from scapy.all import IP, TCP, UDP, Raw
-from scapy.layers.inet import _IPOption_HDR
+from scapy.all import *
 
 def get_if():
     ifs=get_if_list()
@@ -21,25 +18,9 @@ def get_if():
         exit(1)
     return iface
 
-class IPOption_MRI(IPOption):
-    name = "MRI"
-    option = 31
-    fields_desc = [ _IPOption_HDR,
-                    FieldLenField("length", None, fmt="B",
-                                  length_of="swids",
-                                  adjust=lambda pkt,l:l+4),
-                    ShortField("count", 0),
-                    FieldListField("swids",
-                                   [],
-                                   IntField("", 0),
-                                   length_from=lambda pkt:pkt.count*4) ]
-def handle_pkt(pkt):
-    if TCP in pkt and pkt[TCP].dport == 1234:
-        print "got a packet"
-        pkt.show2()
-    #    hexdump(pkt)
-        sys.stdout.flush()
 
+def handle_pkt(pkt):
+    wrpcap('receiver.pcap', pkt, append=True)
 
 def main():
     ifaces = filter(lambda i: 'eth' in i, os.listdir('/sys/class/net/'))

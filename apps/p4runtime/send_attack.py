@@ -8,9 +8,6 @@ import binascii
 
 from scapy.all import *
 
-# # Import config from parent directory
-# sys.path.append("../")
-# from config import *
 
 def get_if():
     ifs=get_if_list()
@@ -30,7 +27,7 @@ def main():
         print 'pass 2 arguments: <destination> "<message>"'
         exit(1)
 
-    addr = socket.gethostbyname(sys.argv[1])
+    addr = sys.argv[1]
     iface = get_if()
 
     print "sending on interface %s to %s" % (iface, str(addr))
@@ -40,6 +37,9 @@ def main():
     packets = rdpcap('new.pcap')
 
     for pkt in packets:
+        # construct packet using destination mac and original L3+ contents
+        pkt = Ether(src=get_if_hwaddr(iface), dst=addr)
+        pkt = pkt / Ether(src_pkt).getlayer(1)
         sendp(pkt, iface=iface, verbose=False)
 
 if __name__ == '__main__':

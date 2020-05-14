@@ -29,11 +29,12 @@ malicious = "01005e7ffffa00166c7f82200800450001c7000040000211c410c0a80273effffff
 
 def main():
 
-    if len(sys.argv) < 2:
-        print 'pass 1 argument: <type: 1 (normal) or 2 (malicious)> '
+    if len(sys.argv) < 3:
+        print 'pass 2 arguments: <destination> <type: 1 (normal) or 2 (malicious)> '
         exit(1)
 
-    type = int(sys.argv[1])
+    addr = sys.argv[1]
+    type = int(sys.argv[2])
     assert type in (1, 2)
     if type == 1:
         src_pkt = binascii.unhexlify(normal)
@@ -43,10 +44,12 @@ def main():
     iface = get_if()
 
     print "sending on interface %s" % (iface)
-    # pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
-    # pkt = pkt / Ether(src_pkt)['IP']
-    pkt = Ether(src_pkt)
+    pkt = Ether(src="01:01:01:01:01:03", dst=addr)
+    pkt /= IP()
+    # pkt = pkt / Ether(src_pkt).getlayer(1)
+    # pkt.getlayer(0).type = 0x000
     pkt.show2()
+    print(binascii.hexlify(str(pkt)))
     sendp(pkt, iface=iface, verbose=False)
 
 

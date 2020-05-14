@@ -22,6 +22,6 @@ for pkt in packets:
 random.shuffle(new_packets)
 
 for pkt in new_packets:
-    wrpcap('new.pcap', pkt, append=True)
+    wrpcap('testing_data.pcap', pkt, append=True)
 
 print(len(new_packets))

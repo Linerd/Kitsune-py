@@ -1,6 +1,6 @@
 import numpy as np
-import dA as AE
-import corClust as CC
+import KitNET.dA as AE
+import KitNET.corClust as CC
 
 # This class represents a KitNET machine learner.
 # KitNET is a lightweight online anomaly detection algorithm based on an ensemble of autoencoders.
@@ -50,11 +50,9 @@ class KitNET:
     #Note: KitNET automatically performs 0-1 normalization on all attributes.
     def process(self,x):
         if self.n_trained > self.FM_grace_period + self.AD_grace_period: #If both the FM and AD are in execute-mode
-            print "execute"
             return self.execute(x)
         else:
             self.train(x)
-            print "train"
             return 0.0
 
     #force train KitNET on x

@@ -44,9 +44,8 @@ def main():
     iface = get_if()
 
     print "sending on interface %s" % (iface)
-    pkt = Ether(src="01:01:01:01:01:03", dst=addr)
-    pkt /= IP()
-    # pkt = pkt / Ether(src_pkt).getlayer(1)
+    pkt = Ether(src=get_if_hwaddr(iface), dst=addr)
+    pkt = pkt / Ether(src_pkt).getlayer(1)
     # pkt.getlayer(0).type = 0x000
     pkt.show2()
     print(binascii.hexlify(str(pkt)))

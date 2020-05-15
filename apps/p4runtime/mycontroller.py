@@ -123,8 +123,7 @@ def listenAndEmitPackets(sw, p4info_helper, due):
     for pkt in sw.StreamMessage('packet'):
         # handle IP and ARP only
         pkt = Ether(pkt.payload)
-        if pkt.haslayer(IP) or pkt.haslayer(ARP):
-            due.write(dataKey, binascii.hexlify(str(pkt)))
+        due.write(dataKey, binascii.hexlify(str(pkt)), PUB_ONLY)
 
 def readTableRules(p4info_helper, sw):
     """
@@ -137,8 +136,6 @@ def readTableRules(p4info_helper, sw):
     for response in sw.ReadTableEntries():
         for entity in response.entities:
             entry = entity.table_entry
-            # TODO For extra credit, you can use the p4info_helper to translate
-            #      the IDs in the entry to names
             table_name = p4info_helper.get_tables_name(entry.table_id)
             print '%s: ' % table_name,
             for m in entry.match:

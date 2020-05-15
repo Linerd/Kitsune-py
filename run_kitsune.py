@@ -5,6 +5,7 @@ from sdnator_due import *
 import binascii
 from scapy.all import *
 from config import *
+import pickle
 
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
@@ -20,11 +21,10 @@ from config import *
 # Set up due
 dataKey = "kitsune::attacker_ip"
 due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
-due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
+due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017, 'opt': BUFFERED})
 # init due
-interest = 'kitsune::train.packet'
 # TODO: Remove COORDINATOR flag when put into production
-due.init("kitsune", CONSUMER | PRODUCER | COORDINATOR, interests = [interest], capabilities = [dataKey])
+due.init("kitsune", CONSUMER | PRODUCER | COORDINATOR)
 
 
 # Load Mirai pcap (a recording of the Mirai botnet malware being activated)
@@ -45,6 +45,7 @@ K = Kitsune(dataKey,packet_limit,maxAE,FMgrace,ADgrace)
 print("Running Kitsune with DUE:")
 
 print('Train Phase')
+
 i = 0
 # normal_count = 0
 # attack_count = 0
@@ -72,7 +73,21 @@ while True:
     # i += 1
     i+=1
 
+# with open('./model.p', 'rb') as f:
+#     K = pickle.load(f)
+
 print('Train Phase Completed')
+
+with open('./model.p', 'wb') as f:
+    pickle.dump(K, f)
+
+print("Start TCP dump on h2")
+due.write('p4runtime::mininet_command', 'h2::python receive_test_traffic.py', PUB_ONLY)
+
+time.sleep(1.0)
+
+print("Start sending traffic on h1")
+due.write('p4runtime::mininet_command', 'h1::python send_test_traffic.py', PUB_ONLY)
 
 def proc_incoming_packet(pkt):
     pkt = Ether(binascii.unhexlify(pkt))
@@ -80,17 +95,12 @@ def proc_incoming_packet(pkt):
     # Per the paper, rmse is normalized so that rmse larger than 1 indicates anomaly
     if rmse > 1:
         # due.write('kitsune::attacker_ip', pkt['IP'].src)
-        due.write('kitsune::attacker_mac', pkt.src)
-    
-    print(rmse, pkt)
+        due.write('kitsune::attacker_mac', pkt.src, PUB_ONLY)
+    print(rmse)
 
-
-def handle_error(e):
-    print e
 
 predicter = due.observe('p4runtime::packet.*')
-predicter.subscribe(on_next=lambda d: proc_incoming_packet(d[0]), 
-                    on_error=lambda e: handle_error(e))
+predicter.subscribe(on_next=lambda d: proc_incoming_packet(d[0]))
 
 print("=========== Due Listener started. Ctrl/Cmd + C to exit ============") 
 due.wait()

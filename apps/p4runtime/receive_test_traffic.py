@@ -18,8 +18,13 @@ def get_if():
         exit(1)
     return iface
 
+i = 0
 
 def handle_pkt(pkt):
+    global i 
+    if not i % 100: print i
+    i += 1
+
     wrpcap('receiver.pcap', pkt, append=True)
 
 def main():

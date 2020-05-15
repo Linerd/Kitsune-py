@@ -20,6 +20,7 @@
 # environment used by the P4 tutorial.
 #
 import os, sys, json, subprocess, re, argparse
+from sdnator_due import *
 from time import sleep
 
 from p4_mininet import P4Switch, P4Host
@@ -201,9 +202,34 @@ class ExerciseRunner:
         # wait for that to finish. Not sure how to do this better
         sleep(1)
 
+        # initialize due to receive dynamic commnads
+        self.init_due()
+
         self.do_net_cli()
         # stop right after the CLI is exited
         self.net.stop()
+
+
+    def init_due(self):
+        """
+        Initialize due so that we can config mininet remotely
+        """
+        print "Setting up due"
+        def run_command(data):
+            try:
+                host, command = data.split('::')
+                print "Received ", host, command
+                self.net.get(host).cmd(command)
+                print "Executed"
+            except Exception as e:
+                print "Command error: ", e
+        self.due = due
+        due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
+        due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
+        # TODO: using the coordinator flag to avoid waiting
+        due.init('mininet', CONSUMER | COORDINATOR)
+        ob = due.observe('p4runtime::mininet_command')
+        ob.subscribe(on_next = lambda d: run_command(d[0]))
 
 
     def parse_links(self, unparsed_links):

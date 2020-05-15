@@ -61,9 +61,7 @@ class FE:
 
             if count == ADgrace + FMgrace:
                 break
-
             count +=1 
-            
 
         self.limit = len(self.scapyin)
         # We are setting the parse_type to scapy because we will be getting IP packets from DUE, instead of reading from file

@@ -2,7 +2,7 @@
 #include <v1model.p4>
 
 const bit<16> TYPE_MYTUNNEL = 0x1212;
-const bit<16> TYPE_IPV4 = 0x800;
+// const bit<16> TYPE_IPV4 = 0x800;
 const bit<32> MAX_TUNNEL_ID = 1 << 16;
 
 /*************************************************************************

@@ -9,7 +9,7 @@ from config import *
 from scipy.stats import norm
 
 #TODO: Change below for input result data
-RESULT = 'kitsune_processed_pkts_blocking_55000'
+RESULT = 'kitsune_processed_pkts_noblocking_no_ts'
 
 print("Reading data")
 with open('./results/%s.p' % RESULT, 'rb') as f:
@@ -47,4 +47,4 @@ figbar.ax.tick_params(labelsize=28)
 # plt.annotate('Mirai Bot launches\nDoS attack', xy=(times[370000], 100), xytext=(
 #     times[390000], 1000), arrowprops=dict(facecolor='black', shrink=0.05), fontsize=28)
 
-plt.savefig('./results/%s.pdf' % RESULT)
+plt.savefig('./results/%s.png' % RESULT)

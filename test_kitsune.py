@@ -48,11 +48,15 @@ with PcapReader('./results/receiver_noblocking.pcap') as pkts:
     for pkt in pkts:
         if not i % 1000: print (i)
         rmse = K.proc_next_packet_due(pkt)
+
+        if rmse > 1:
+            due.write('kitsune::attacker_mac', pkt.src, PUB_ONLY)
+            
         RMSEs.append((int(pkt.time * 1000000), rmse))
         i += 1
 
 print("Dumping data")
-with open('./results/kitsune_processed_pkts_noblocking_original.p', 'wb') as f:
+with open('./results/kitsune_processed_pkts_noblocking_no_ts.p', 'wb') as f:
     pickle.dump(RMSEs, f)
 
 due.close()

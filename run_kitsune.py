@@ -70,8 +70,8 @@ def proc_incoming_packet(pkt):
     # Per the paper, rmse is normalized so that rmse larger than 1 indicates anomaly
     # during training rmse is always 0
     # NOTE: uncomment below to enable blocking
-    # if rmse > 1:
-    #     due.write('kitsune::attacker_mac', pkt.src, PUB_ONLY)
+    if rmse > 1:
+        due.write('kitsune::attacker_mac', pkt.src, PUB_ONLY)
     RMSEs.append((int(pkt.time * 1000000), rmse))
 
 predictor = due.observe('p4runtime::packet.*')

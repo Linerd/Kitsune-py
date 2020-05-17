@@ -1,11 +1,16 @@
+#!/usr/bin/env python3.7
+
+from matplotlib import pyplot as plt
+from matplotlib import cm
 from Kitsune import Kitsune
-import numpy as np
+from scipy.stats import norm
 import time
-from sdnator_due import *
 import binascii
 from scapy.all import *
 from config import *
 import pickle
+import numpy as np
+from sdnator_due import *
 
 ##############################################################################
 # Kitsune a lightweight online network intrusion detection system based on an ensemble of autoencoders (kitNET).
@@ -21,88 +26,81 @@ import pickle
 # Set up due
 dataKey = "kitsune::attacker_ip"
 due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
-due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017, 'opt': BUFFERED})
+due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017, 'opt': BUFFERED, 'db': DB_NAME})
 # init due
 # TODO: Remove COORDINATOR flag when put into production
-due.init("kitsune", CONSUMER | PRODUCER | COORDINATOR)
-
-
-# Load Mirai pcap (a recording of the Mirai botnet malware being activated)
-# The first 70,000 observations are clean...
-print("Unzipping Sample Capture...")
-import zipfile
-with zipfile.ZipFile("mirai.zip","r") as zip_ref:
-    zip_ref.extractall()
+due.init("Kitsune Packet Analyzer", CONSUMER | PRODUCER | COORDINATOR)
 
 packet_limit = np.Inf #the number of packets to process
 
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer
 
+print("Initiaizing Kitsune")
 # Build Kitsune
 K = Kitsune(dataKey,packet_limit,maxAE,FMgrace,ADgrace)
 
 print("Running Kitsune with DUE:")
 
-print('Train Phase')
+# print('Train Phase')
 
-i = 0
-# normal_count = 0
-# attack_count = 0
-while True:
-    if i % 1000 == 0:
-        print(i)
-    rmse = K.proc_next_packet()
-    if rmse == -1:
-        break
-
-    # Used for generating new pcap containing both normal and attack packets
-    # # Starting at the 100000th packet to get rid of the training data
-    # if i > 100000:
-    #     if rmse != 0.0:
-    #         if rmse < 1:
-    #             # Normal traffic
-    #             if normal_count < NUMBER_OF_NORMAL_PACKETS:
-    #                 wrpcap('normal.pcap', pkt, append=True)
-    #                 normal_count += 1
-    #         else:
-    #             # Attack traffic
-    #             if attack_count < NUMBER_OF_ATTACK_PACKETS:
-    #                 wrpcap('attack.pcap', pkt, append=True)
-    #                 attack_count += 1
-    # i += 1
-    i+=1
+# i = 0
+# while True:
+#     if i % 1000 == 0:
+#         print(i)
+#     rmse = K.proc_next_packet()
+#     if rmse == -1:
+#         break
+#     i += 1
 
 # with open('./model.p', 'rb') as f:
 #     K = pickle.load(f)
 
-print('Train Phase Completed')
+# print('Train Phase Completed')
 
-with open('./model.p', 'wb') as f:
-    pickle.dump(K, f)
+# with open('./model.p', 'wb') as f:
+#     pickle.dump(K, f)
 
-print("Start TCP dump on h2")
-due.write('p4runtime::mininet_command', 'h2::python receive_test_traffic.py', PUB_ONLY)
 
-time.sleep(1.0)
-
-print("Start sending traffic on h1")
-due.write('p4runtime::mininet_command', 'h1::python send_test_traffic.py', PUB_ONLY)
-
+# process packet
+RMSEs = []
 def proc_incoming_packet(pkt):
     pkt = Ether(binascii.unhexlify(pkt))
     rmse = K.proc_next_packet_due(pkt)
     # Per the paper, rmse is normalized so that rmse larger than 1 indicates anomaly
-    if rmse > 1:
-        # due.write('kitsune::attacker_ip', pkt['IP'].src)
-        due.write('kitsune::attacker_mac', pkt.src, PUB_ONLY)
-    print(rmse)
+    # during training rmse is always 0
+    # NOTE: uncomment below to enable blocking
+    # if rmse > 1:
+    #     due.write('kitsune::attacker_mac', pkt.src, PUB_ONLY)
+    RMSEs.append((int(pkt.time * 1000000), rmse))
 
+predictor = due.observe('p4runtime::packet.*')
+predictor.subscribe(on_next=lambda d: proc_incoming_packet(d[0]))
 
-predicter = due.observe('p4runtime::packet.*')
-predicter.subscribe(on_next=lambda d: proc_incoming_packet(d[0]))
+# listen for completion
+GLOBAL = {'done': False}
+def dumping_pkts():
+    print("Dumping results")
+    with open('./results/kitsune_processed_pkts.p', 'wb') as f:
+        pickle.dump(RMSEs, f)
+    GLOBAL['done'] = True
 
-print("=========== Due Listener started. Ctrl/Cmd + C to exit ============") 
-due.wait()
+completion = due.observe('p4runtime.mininent_command.done')
+completion.subscribe(on_next=lambda d: dumping_pkts())
 
-due.close()
+# run sender and listener
+print("Start receiving traffic on h2")
+due.write('p4runtime::mininet_command', 'h2::./receive_traffic.py &> ./receive_traffic.out', PUB_ONLY)
+
+time.sleep(1.0)
+
+print("Start sending traffic on h1")
+due.write('p4runtime::mininet_command', 'h1::./send_traffic.py &> ./send_traffic.out', PUB_ONLY)
+
+print("=========== Due Listener started. Ctrl/Cmd + C to exit ============")
+def until_done():
+    ret = GLOBAL['done']
+    if ret:
+        due.close()
+    return ret
+due.wait(until_done)

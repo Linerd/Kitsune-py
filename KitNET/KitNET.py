@@ -36,6 +36,9 @@ class KitNET:
         self.n_trained = 0 # the number of training instances so far
         self.n_executed = 0 # the number of executed instances so far
         self.v = feature_map
+        
+        self.training = False
+
         if self.v is None:
             print("Feature-Mapper: train-mode, Anomaly-Detector: off-mode")
         else:
@@ -50,8 +53,14 @@ class KitNET:
     #Note: KitNET automatically performs 0-1 normalization on all attributes.
     def process(self,x):
         if self.n_trained > self.FM_grace_period + self.AD_grace_period: #If both the FM and AD are in execute-mode
+            if self.training:
+                print("Start execute phase")
+            self.training = False
             return self.execute(x)
         else:
+            if not self.training:
+                print("Start train phase")
+            self.training = True
             self.train(x)
             return 0.0
 

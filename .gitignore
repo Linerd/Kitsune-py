@@ -12,3 +12,4 @@ logs/
 pcaps/
 .bash*
 dump.rdb
+*.out

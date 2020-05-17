@@ -49,14 +49,14 @@ class FE:
         return ''
 
     def __prep__(self):
-        print("Reading training dataset packets via DUE...")
-        raw_packets = due.get({'dataKey': "kitsune::train.packet"})
+        print("Reading historical training dataset packets via DUE...")
+        raw_packets = due.get({'dataKey': KITSUNE_TRAIN_DATA_KEY})
         self.scapyin = []
 
         count = 0
         for each in raw_packets:
             pkt = binascii.unhexlify(each['value'])
-            pkt = IP(pkt)
+            pkt = Ether(pkt)
             self.scapyin.append(pkt)
 
             if count == ADgrace + FMgrace:

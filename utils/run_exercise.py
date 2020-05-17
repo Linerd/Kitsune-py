@@ -220,14 +220,14 @@ class ExerciseRunner:
                 host, command = data.split('::')
                 print "Received ", host, command
                 self.net.get(host).cmd(command)
-                print "Executed"
+                due.write('p4runtime.mininent_command.done', data, PUB_ONLY)
             except Exception as e:
                 print "Command error: ", e
         self.due = due
         due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
         due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
         # TODO: using the coordinator flag to avoid waiting
-        due.init('mininet', CONSUMER | COORDINATOR)
+        due.init('Mininet Node Actuator', CONSUMER | COORDINATOR)
         ob = due.observe('p4runtime::mininet_command')
         ob.subscribe(on_next = lambda d: run_command(d[0]))
 

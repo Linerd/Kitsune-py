@@ -255,7 +255,7 @@ def main(p4info_file_path, bmv2_file_path):
         due.set_pubsub({'driver': 'redis', 'host': 'localhost', 'port': 6379})
         due.set_db({'driver': 'mongo', 'host': 'localhost', 'port': 27017})
         # TODO: use the COORDINATOR flag to stop waiting
-        due.init('P4RuntimeController', CONSUMER | PRODUCER | COORDINATOR)
+        due.init('P4Runtime Controller', CONSUMER | PRODUCER | COORDINATOR)
 
         # listen for packet and send over to SDNator
         # NOTE: using s1 as example here
